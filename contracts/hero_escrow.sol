@@ -3,70 +3,142 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract HeroEscrow {
+contract HeroEscrow is Context, ERC721Holder {
+    address constant HERO_NFT = 0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61;
+    address constant JEWEL_TOKEN = 0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43;
+
     struct Trade {
+        uint256 tradeId;
         uint256 tokenId;
         address payable seller;
         address payable buyer;
         uint256 price;
-        bool isDeposited;
-        bool isCompleted;
+        bool nftDeposited;
+        bool executed;
+        bool canceled;
     }
 
-    uint256 private tradeCounter;
-    mapping(uint256 => Trade) public trades;
+    Trade[] public trades;
+    mapping(uint256 => uint256) public tradeIds;
 
-    address constant JEWEL_TOKEN = 0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43;
-    address constant HERO_CORE_NFT = 0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61;
+    function createTrade(uint256 tokenId, address payable buyer, uint256 price) public {
+        require(IERC721(HERO_NFT).ownerOf(tokenId) == msg.sender, "You don't own this hero.");
+        require(price > 0, "Price must be greater than 0.");
 
-    event TradeCreated(uint256 tradeId);
-    event NFTDeposited(uint256 tradeId);
-    event TradeCompleted(uint256 tradeId);
+        // Get the seller's address
+        address payable seller = payable(IERC721(HERO_NFT).ownerOf(tokenId));
 
-    function createTrade(
-        uint256 tokenId,
-        address buyer,
-        uint256 price
-    ) public {
-        tradeCounter++;
-        trades[tradeCounter] = Trade({
+        // Allow the contract to spend DFK Hero NFTs
+        IERC721(HERO_NFT).approve(address(this), tokenId);
+
+        // Transfer the NFT from the seller to the contract
+        IERC721(HERO_NFT).safeTransferFrom(msg.sender, address(this), tokenId);
+
+        // Create the trade
+        trades.push(
+            Trade({
+            tradeId: trades.length,
             tokenId: tokenId,
-            seller: payable(msg.sender),
-            buyer: payable(buyer),
+            seller: seller,
+            buyer: buyer,
             price: price,
-            isDeposited: false,
-            isCompleted: false
-        });
-        emit TradeCreated(tradeCounter);
+            nftDeposited: true,
+            executed: false,
+            canceled: false
+            })
+        );
+
+        emit TradeCreated(trades.length - 1, tokenId, seller, buyer, price);
     }
 
-    function depositNFT(uint256 tradeId) public {
-        Trade storage trade = trades[tradeId];
-        require(msg.sender == trade.seller, "Only the seller can deposit the hero NFT.");
-        require(!trade.isDeposited, "Hero NFT is already deposited into contract.");
+    function executeTrade(uint256 tradeId) public {
+        Trade storage trade = trades[tradeId - 1];
+        require(trade.executed == false, "Trade already executed");
+        require(trade.nftDeposited == true, "NFT not deposited yet");
+        require(_msgSender() == trade.buyer, "Only buyer can execute trade");
 
-        IERC721(HERO_CORE_NFT).transferFrom(msg.sender, address(this), trade.tokenId);
-        trade.isDeposited = true;
-        emit NFTDeposited(tradeId);
+        IERC20 jewelContract = IERC20(JEWEL_TOKEN);
+        uint256 jewelAmount = trade.price;
+        address payable seller = trade.seller;
+
+        // Verify buyer has enough JEWEL to buy the NFT
+        require(jewelContract.balanceOf(_msgSender()) >= jewelAmount, "Insufficient JEWEL balance");
+
+        // Check if contract is approved to transfer enough JEWEL tokens
+        require(jewelContract.allowance(_msgSender(), address(this)) >= jewelAmount, "Contract not approved to transfer JEWEL tokens");
+
+        // Transfer JEWEL tokens from buyer to contract
+        jewelContract.transferFrom(_msgSender(), address(this), jewelAmount);
+
+        // Transfer NFT from contract to buyer
+        IERC721 heroContract = IERC721(HERO_NFT);
+        heroContract.safeTransferFrom(address(this), trade.buyer, trade.tokenId);
+
+        // Transfer JEWEL tokens from contract to seller
+        jewelContract.transfer(seller, jewelAmount);
+
+        trade.executed = true;
+        emit TradeExecuted(tradeId);
     }
 
-    function executeTrade(uint256 tradeId) public payable {
-        Trade storage trade = trades[tradeId];
-        require(msg.sender == trade.buyer, "Only the designated buyer can execute the trade.");
-        require(!trade.isCompleted, "Trade is already completed.");
-        require(trade.isDeposited, "Hero NFT is not yet deposited in to contract.");
-        require(msg.value == trade.price, "Invalid payment amount");
+    function cancelTrade(uint256 tradeId) public {
+        Trade storage trade = trades[tradeId - 1];
+        require(trade.executed == false, "Trade already executed");
+        require(_msgSender() == trade.seller, "Only seller can cancel trade");
 
-        IERC20(JEWEL_TOKEN).transferFrom(msg.sender, trade.seller, trade.price);
-        IERC721(HERO_CORE_NFT).transferFrom(address(this), msg.sender, trade.tokenId);
-        trade.isCompleted = true;
-        emit TradeCompleted(tradeId);
+        IERC721 heroContract = IERC721(HERO_NFT);
+        heroContract.safeTransferFrom(address(this), trade.seller, trade.tokenId);
+
+        trade.canceled = true;
+
+        emit TradeCanceled(tradeId);
     }
 
-    function setApprovalForAllNFT(bool approved) public {
-        IERC721(HERO_CORE_NFT).setApprovalForAll(msg.sender, approved);
+    function getTradeCount() public view returns (uint256) {
+        return trades.length;
     }
+
+    function _exists(uint256 tokenId) internal view returns (bool) {
+        IERC721 heroContract = IERC721(HERO_NFT);
+        return heroContract.ownerOf(tokenId) != address(0);
+    }
+
+    function getActiveTrades() public view returns (Trade[] memory) {
+        uint256 tradeCount = 0;
+        for (uint i = 0; i < trades.length; i++) {
+            if (!trades[i].executed && !trades[i].canceled) {
+                tradeCount++;
+            }
+        }
+        Trade[] memory activeTrades = new Trade[](tradeCount);
+        uint256 j = 0;
+        for (uint k = 0; k < trades.length; k++) {
+            if (!trades[k].executed && !trades[k].canceled) {
+                activeTrades[j] = trades[k];
+                j++;
+            }
+        }
+        return activeTrades;
+    }
+
+event TradeCreated(
+    uint256 tradeId,
+    uint256 tokenId,
+    address indexed seller,
+    address indexed buyer,
+    uint256 price
+);
+
+event TradeExecuted(
+    uint256 tradeId
+);
+
+event TradeCanceled(
+    uint256 tradeId
+);
 }
