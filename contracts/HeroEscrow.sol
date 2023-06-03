@@ -3,12 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract HeroEscrow is Context, ERC721Holder {
+
+contract HeroEscrow is Context, ERC721Holder, ReentrancyGuard {
     address constant HERO_NFT = 0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61;
     address constant JEWEL_TOKEN = 0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43;
 
@@ -27,7 +29,7 @@ contract HeroEscrow is Context, ERC721Holder {
     mapping(uint256 => uint256) public tradeIds;
 
     function createTrade(uint256 tokenId, address payable buyer, uint256 price) public {
-        require(IERC721(HERO_NFT).ownerOf(tokenId) == msg.sender, "You don't own this hero.");
+        require(IERC721(HERO_NFT).ownerOf(tokenId) == _msgSender(), "You don't own this hero.");
         require(price > 0, "Price must be greater than 0.");
 
         // Get the seller's address
@@ -37,12 +39,12 @@ contract HeroEscrow is Context, ERC721Holder {
         IERC721(HERO_NFT).approve(address(this), tokenId);
 
         // Transfer the NFT from the seller to the contract
-        IERC721(HERO_NFT).safeTransferFrom(msg.sender, address(this), tokenId);
+        IERC721(HERO_NFT).safeTransferFrom(_msgSender(), address(this), tokenId);
 
         // Create the trade
         trades.push(
             Trade({
-            tradeId: trades.length,
+            tradeId: trades.length + 1,
             tokenId: tokenId,
             seller: seller,
             buyer: buyer,
@@ -56,7 +58,7 @@ contract HeroEscrow is Context, ERC721Holder {
         emit TradeCreated(trades.length - 1, tokenId, seller, buyer, price);
     }
 
-    function executeTrade(uint256 tradeId) public {
+    function executeTrade(uint256 tradeId) public nonReentrant {
         Trade storage trade = trades[tradeId - 1];
         require(trade.executed == false, "Trade already executed");
         require(trade.nftDeposited == true, "NFT not deposited yet");
@@ -70,7 +72,10 @@ contract HeroEscrow is Context, ERC721Holder {
         require(jewelContract.balanceOf(_msgSender()) >= jewelAmount, "Insufficient JEWEL balance");
 
         // Check if contract is approved to transfer enough JEWEL tokens
-        require(jewelContract.allowance(_msgSender(), address(this)) >= jewelAmount, "Contract not approved to transfer JEWEL tokens");
+        require(jewelContract.allowance(_msgSender(), address(this)) >= jewelAmount, "Contract not approved to spend JEWEL tokens");
+
+        // Check if the sent JEWEL amount matches the price of the trade
+        require(jewelAmount == trade.price, "Sent JEWEL amount does not match the price of the trade");
 
         // Transfer JEWEL tokens from buyer to contract
         jewelContract.transferFrom(_msgSender(), address(this), jewelAmount);
@@ -83,10 +88,10 @@ contract HeroEscrow is Context, ERC721Holder {
         jewelContract.transfer(seller, jewelAmount);
 
         trade.executed = true;
-        emit TradeExecuted(tradeId);
+        emit TradeExecuted(trade.tradeId, trade.tokenId, trade.seller, trade.buyer, trade.price);
     }
 
-    function cancelTrade(uint256 tradeId) public {
+    function cancelTrade(uint256 tradeId) public nonReentrant {
         Trade storage trade = trades[tradeId - 1];
         require(trade.executed == false, "Trade already executed");
         require(_msgSender() == trade.seller, "Only seller can cancel trade");
@@ -96,7 +101,7 @@ contract HeroEscrow is Context, ERC721Holder {
 
         trade.canceled = true;
 
-        emit TradeCanceled(tradeId);
+        emit TradeCanceled(trade.tradeId, trade.tokenId, trade.seller, trade.buyer, trade.price);
     }
 
     function getTradeCount() public view returns (uint256) {
@@ -127,18 +132,26 @@ contract HeroEscrow is Context, ERC721Holder {
     }
 
 event TradeCreated(
-    uint256 tradeId,
-    uint256 tokenId,
+    uint256 indexed tradeId,
+    uint256 indexed tokenId,
     address indexed seller,
-    address indexed buyer,
+    address buyer,
     uint256 price
 );
 
 event TradeExecuted(
-    uint256 tradeId
+    uint256 indexed tradeId,
+    uint256 indexed tokenId,
+    address indexed seller,
+    address buyer,
+    uint256 price
 );
 
 event TradeCanceled(
-    uint256 tradeId
+    uint256 indexed tradeId,
+    uint256 indexed tokenId,
+    address indexed seller,
+    address buyer,
+    uint256 price
 );
 }
