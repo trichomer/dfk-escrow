@@ -100,12 +100,20 @@ function App() {
   };
   
   async function approveHero() {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const heroContractWithSigner = heroContract.connect(signer);
-    const tx = await heroContractWithSigner.setApprovalForAll(escrowAddress, true);
-    await tx.wait();
-    checkHeroApproval();
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const heroContractWithSigner = heroContract.connect(signer);
+      const tx = await heroContractWithSigner.setApprovalForAll(escrowAddress, true);
+      await tx.wait();
+      checkHeroApproval();
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("Transaction rejected by user");
+    } else {
+        throw error;
+    }
+    }
   };
 
   async function checkJewelApproval() {
@@ -116,12 +124,20 @@ function App() {
   };
 
   async function approveJewel() {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const jewelContractWithSigner = jewelContract.connect(signer);
-    const tx = await jewelContractWithSigner.approve(escrowAddress, ethers.constants.MaxUint256);
-    await tx.wait();
-    checkJewelApproval();
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const jewelContractWithSigner = jewelContract.connect(signer);
+      const tx = await jewelContractWithSigner.approve(escrowAddress, ethers.constants.MaxUint256);
+      await tx.wait();
+      checkJewelApproval();
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("Transaction rejected by user");
+    } else {
+        throw error;
+    }
+    }
   };
   
   // Format heroIds for the DataGrid component
@@ -135,20 +151,53 @@ function App() {
   ];
 
   async function createTrade() {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
-    const signer = provider.getSigner();
-    const contractWithSigner = contract.connect(signer);
-    await contractWithSigner.createTrade(tokenId, buyerAddress, ethers.utils.parseEther(price));
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
+      const signer = provider.getSigner();
+      const contractWithSigner = contract.connect(signer);
+      await contractWithSigner.createTrade(tokenId, buyerAddress, ethers.utils.parseEther(price));
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("Transaction rejected by user");
+    } else {
+        throw error;
+    }
+    }
   };
 
   async function executeTrade(tradeId) {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
-    const signer = provider.getSigner();
-    const contractWithSigner = contract.connect(signer);
-    await contractWithSigner.executeTrade(tradeId);
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
+      const signer = provider.getSigner();
+      const contractWithSigner = contract.connect(signer);
+      await contractWithSigner.executeTrade(tradeId);
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("Transaction rejected by user");
+    } else {
+        throw error;
+    }
+    }
   };
+
+  async function cancelTrade(tradeId) {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
+      const signer = provider.getSigner();
+      const contractWithSigner = contract.connect(signer);
+      await contractWithSigner.cancelTrade(tradeId);
+    } catch (error) {
+      if (error.code === 4001) {
+        console.log("Transaction rejected by user");
+    } else {
+        throw error;
+    }
+    }
+  };
+  
   
   useEffect(() => {
     checkHeroApproval();
@@ -270,6 +319,7 @@ function App() {
                   trades={activeTrades} 
                   selectedAddress={selectedAddress} 
                   onExecute={executeTrade} 
+                  onCancel={cancelTrade}
                   jewelIsApproved={jewelIsApproved} 
                 />
               </CardContent>
