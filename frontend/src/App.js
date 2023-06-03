@@ -13,7 +13,8 @@ import escrowAbi from './abis/HeroEscrow.json';
 import heroAbi from './abis/HeroCoreDiamond.json';
 import jewelAbi from './abis/JewelToken.json';
 import TradeList from './components/TradeList';
-import ExecuteTrade from './components/ExecuteTrade';
+import jewelIcon from './img/jewel_icon.png';
+import klayIcon from './img/klaytn_icon.png';
 const escrowAddress = '0x6D8D4959E2a2F59C5A8eD306465B8Ef7E2c9Ea36';
 const heroAddress = '0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61';
 const jewelAddress = '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43';
@@ -192,8 +193,8 @@ function App() {
           <div>
             <Paper elevation={3}>
               <p>Connected with: {selectedAddress}</p>
-              <p>{balance} KLAY</p>
-              <p>{jewelBalance} JEWEL</p>
+              <p>{balance} <img src={klayIcon} alt="KLAY Icon" style={{ width: '20px' }} /></p>
+              <p>{jewelBalance} <img src={jewelIcon} alt="JEWEL Icon" style={{ width: '20px' }} /></p>
             </Paper>
             <Card>
               <CardContent>
@@ -210,7 +211,7 @@ function App() {
                   inputProps={{ pattern: "^[a-zA-Z0-9]*$" }}
                 />
                 <TextField 
-                  label="Price" 
+                  label="Price (JEWEL)" 
                   value={price} 
                   onChange={e => setPrice(e.target.value)} 
                   type="number"

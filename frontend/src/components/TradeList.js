@@ -1,8 +1,9 @@
 import React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import Button from '@mui/material/Button';
-import ExecuteTrade from './ExecuteTrade';
+import jewelIcon from '../img/jewel_icon.png';
 import { ethers } from "ethers";
+import Download from '@mui/icons-material/Download';
 
 function TradeList({ trades, selectedAddress, onExecute, jewelIsApproved }) {
     //console.log("Trades: ", trades);
@@ -32,7 +33,13 @@ function TradeList({ trades, selectedAddress, onExecute, jewelIsApproved }) {
         width: 200,
         renderCell: (params) => (
         //console.log("Render Cell Params: ", params);
-            <Button variant="contained" color="primary" onClick={() => onExecute(params.row.tradeId)} disabled={!jewelIsApproved}>
+            <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => onExecute(params.row.tradeId)} 
+                disabled={!jewelIsApproved}
+                endIcon={<Download />}
+            >
                 Buy
             </Button>
     ),
