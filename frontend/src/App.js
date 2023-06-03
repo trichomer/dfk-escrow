@@ -47,9 +47,12 @@ function App() {
   const [buyerAddress, setBuyerAddress] = useState('');
   const [price, setPrice] = useState('');
   const [heroContract, setHeroContract] = useState(null);
+  const [jewelContract, setJewelContract] = useState(null);
   const [heroIds, setHeroIds] = useState([]);
   const [heroIsApproved, setHeroIsApproved] = useState(false);
   const [activeTrades, setActiveTrades] = useState([]);
+  const [jewelIsApproved, setJewelIsApproved] = useState(false);
+
 
   
   // User clicks Connect button
@@ -63,7 +66,9 @@ function App() {
       // Create a new ethers provider
       const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-      const jewelContract = new ethers.Contract(jewelAddress, jewelAbi, provider);
+      const jewelContractInstance = new ethers.Contract(jewelAddress, jewelAbi, provider);
+      setJewelContract(jewelContractInstance);
+
       const heroContractInstance = new ethers.Contract(heroAddress, heroAbi, provider);
       setHeroContract(heroContractInstance);  // Set the state variable
       checkHeroApproval();
@@ -73,7 +78,7 @@ function App() {
       const balance = await provider.getBalance(account);
       setBalance(ethers.utils.formatEther(balance));
 
-      const jewelBalance = await jewelContract.balanceOf(account);
+      const jewelBalance = await jewelContractInstance.balanceOf(account);
       setJewelBalance(ethers.utils.formatEther(jewelBalance));
 
       const heroBalance = await heroContractInstance.getUserHeroes(account);
@@ -100,6 +105,22 @@ function App() {
     const tx = await heroContractWithSigner.setApprovalForAll(escrowAddress, true);
     await tx.wait();
     checkHeroApproval();
+  };
+
+  async function checkJewelApproval() {
+    if (jewelContract) {
+      const approved = await jewelContract.allowance(selectedAddress, escrowAddress);
+      setJewelIsApproved(approved.gte(ethers.utils.parseEther("1")));  // Minimum 1 JEWEL allowed
+    }
+  };
+
+  async function approveJewel() {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const jewelContractWithSigner = jewelContract.connect(signer);
+    const tx = await jewelContractWithSigner.approve(escrowAddress, ethers.constants.MaxUint256);
+    await tx.wait();
+    checkJewelApproval();
   };
   
   // Format heroIds for the DataGrid component
@@ -156,6 +177,11 @@ function App() {
   
     fetchActiveTrades();
   }, []);
+
+  useEffect(() => {
+    checkJewelApproval();
+  }, [jewelContract, selectedAddress]);
+  
   
 
   return (
@@ -216,14 +242,35 @@ function App() {
                     List Hero
                   </Button>
                 </div>
-                <div style={{ height: 400, width: '50%' }}>
+                <div style={{ height: 400, width: '100%' }}>
                   <DataGrid rows={rows} columns={columns} pageSize={10} />
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent>
-                <TradeList trades={activeTrades} selectedAddress={selectedAddress} onExecute={executeTrade} />
+              {!jewelIsApproved && (
+                    <Button 
+                      variant="contained" 
+                      onClick={approveJewel}
+                      disabled={jewelIsApproved}
+                    >
+                      Approve Jewel
+                    </Button>
+                )}
+                {jewelIsApproved
+                  ?
+                  <Alert severity="success">JEWEL Approved</Alert>
+                  :
+                  <Alert severity="warning">Please approve JEWEL to be spent by the Escrow contract</Alert>
+                }
+
+                <TradeList 
+                  trades={activeTrades} 
+                  selectedAddress={selectedAddress} 
+                  onExecute={executeTrade} 
+                  jewelIsApproved={jewelIsApproved} 
+                />
               </CardContent>
             </Card>
             <div></div>

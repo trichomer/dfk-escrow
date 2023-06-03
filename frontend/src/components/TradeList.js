@@ -2,45 +2,48 @@ import React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import Button from '@mui/material/Button';
 import ExecuteTrade from './ExecuteTrade';
+import { ethers } from "ethers";
 
-function TradeList({ trades, selectedAddress, onExecute }) {
-    const tradeRows = trades.filter(trade => trade.buyer === selectedAddress).map((trade, index) => ({
+function TradeList({ trades, selectedAddress, onExecute, jewelIsApproved }) {
+    //console.log("Trades: ", trades);
+    //console.log("Selected Address: ", selectedAddress);
+    const tradeRows = trades.filter(trade => trade.buyer.toLowerCase() === selectedAddress.toLowerCase()).map((trade, index) => ({
         id: index,
         tradeId: trade.tradeId,
         tokenId: trade.tokenId,
         buyer: trade.buyer,
         seller: trade.seller,
-        price: trade.price,
+        price: ethers.utils.formatEther(trade.price),
         nftDeposited: trade.nftDeposited ? 'Yes' : 'No',
         executed: trade.executed ? 'Yes' : 'No',
         canceled: trade.canceled ? 'Yes' : 'No'
       }));
-    
+    //console.log("Trade Rows: ", tradeRows);
 
-      const tradeColumns = [
-        { field: 'tradeId', headerName: 'Trade ID', width: 130 },
-        { field: 'tokenId', headerName: 'Token ID', width: 130 },
-        { field: 'buyer', headerName: 'Buyer', width: 200 },
-        { field: 'seller', headerName: 'Seller', width: 200 },
-        { field: 'price', headerName: 'Price', width: 130 },
-        { field: 'nftDeposited', headerName: 'NFT Deposited', width: 150 },
-        { field: 'executed', headerName: 'Executed', width: 130 },
-        { field: 'canceled', headerName: 'Canceled', width: 130 },
-        {
-          field: 'execute',
-          headerName: 'Execute Trade',
-          width: 200,
-          renderCell: (params) => (
-            <ExecuteTrade tradeId={params.row.tradeId} onExecute={onExecute} />
-          ),
-        },
-      ];
+    const tradeColumns = [
+    { field: 'tradeId', headerName: 'Trade ID', width: 70 },
+    { field: 'tokenId', headerName: 'Token ID', width: 130 },
+    { field: 'buyer', headerName: 'Buyer', width: 200 },
+    { field: 'seller', headerName: 'Seller', width: 200 },
+    { field: 'price', headerName: 'Price (JEWEL)', width: 130 },
+    {
+        field: 'execute',
+        headerName: 'Buy',
+        width: 200,
+        renderCell: (params) => (
+        //console.log("Render Cell Params: ", params);
+            <Button variant="contained" color="primary" onClick={() => onExecute(params.row.tradeId)} disabled={!jewelIsApproved}>
+                Buy
+            </Button>
+    ),
+    },
+    ];
     
 
 
 
   return (
-    <div style={{ height: 400, width: '50%' }}>
+    <div style={{ height: 400, width: '100%' }}>
       <DataGrid rows={tradeRows} columns={tradeColumns} pageSize={10} />
     </div>
   );
