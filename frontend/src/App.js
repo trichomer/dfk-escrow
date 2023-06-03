@@ -12,6 +12,8 @@ import Alert from '@mui/material/Alert';
 import escrowAbi from './abis/HeroEscrow.json';
 import heroAbi from './abis/HeroCoreDiamond.json';
 import jewelAbi from './abis/JewelToken.json';
+import TradeList from './components/TradeList';
+import ExecuteTrade from './components/ExecuteTrade';
 const escrowAddress = '0x6D8D4959E2a2F59C5A8eD306465B8Ef7E2c9Ea36';
 const heroAddress = '0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61';
 const jewelAddress = '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43';
@@ -47,6 +49,7 @@ function App() {
   const [heroContract, setHeroContract] = useState(null);
   const [heroIds, setHeroIds] = useState([]);
   const [heroIsApproved, setHeroIsApproved] = useState(false);
+  const [activeTrades, setActiveTrades] = useState([]);
 
   
   // User clicks Connect button
@@ -64,6 +67,8 @@ function App() {
       const heroContractInstance = new ethers.Contract(heroAddress, heroAbi, provider);
       setHeroContract(heroContractInstance);  // Set the state variable
       checkHeroApproval();
+
+
 
       const balance = await provider.getBalance(account);
       setBalance(ethers.utils.formatEther(balance));
@@ -114,7 +119,47 @@ function App() {
     const contractWithSigner = contract.connect(signer);
     await contractWithSigner.createTrade(tokenId, buyerAddress, ethers.utils.parseEther(price));
   };
+
+  async function executeTrade(tradeId) {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
+    const signer = provider.getSigner();
+    const contractWithSigner = contract.connect(signer);
+    await contractWithSigner.executeTrade(tradeId);
+  };
+
+  const tradeRows = activeBuyerTrades.map((trade, index) => ({
+    id: index,
+    tradeId: trade.tradeId,
+    tokenId: trade.tokenId,
+    price: trade.price,
+  }));
   
+  const tradeColumns = [
+    { field: 'tradeId', headerName: 'Trade ID', width: 130 },
+    { field: 'tokenId', headerName: 'Token ID', width: 130 },
+    { field: 'price', headerName: 'Price', width: 130 },
+    {
+      field: '',
+      headerName: 'Execute Trade',
+      renderCell: (params) => (
+        <Button 
+          variant="contained"
+          onClick={() => executeTrade(params.row.tradeId)}
+        >
+          Execute Trade
+        </Button>
+      ),
+      width: 200,
+    },
+  ];
+  
+  
+  useEffect(() => {
+    checkHeroApproval();
+  }, [heroContract, selectedAddress]);
+  
+
   return (
     <ThemeProvider theme={theme}>
       <div style={{ backgroundColor: theme.palette.background.default, color: theme.palette.text.primary }}>
@@ -175,6 +220,9 @@ function App() {
                 </div>
                 <div style={{ height: 400, width: '50%' }}>
                   <DataGrid rows={rows} columns={columns} pageSize={10} />
+                </div>
+                <div style={{ height: 400, width: '50%' }}>
+                  <DataGrid rows={tradeRows} columns={tradeColumns} pageSize={10} />
                 </div>
               </CardContent>
             </Card>
