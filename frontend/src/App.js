@@ -127,37 +127,35 @@ function App() {
     const contractWithSigner = contract.connect(signer);
     await contractWithSigner.executeTrade(tradeId);
   };
-
-  const tradeRows = activeBuyerTrades.map((trade, index) => ({
-    id: index,
-    tradeId: trade.tradeId,
-    tokenId: trade.tokenId,
-    price: trade.price,
-  }));
-  
-  const tradeColumns = [
-    { field: 'tradeId', headerName: 'Trade ID', width: 130 },
-    { field: 'tokenId', headerName: 'Token ID', width: 130 },
-    { field: 'price', headerName: 'Price', width: 130 },
-    {
-      field: '',
-      headerName: 'Execute Trade',
-      renderCell: (params) => (
-        <Button 
-          variant="contained"
-          onClick={() => executeTrade(params.row.tradeId)}
-        >
-          Execute Trade
-        </Button>
-      ),
-      width: 200,
-    },
-  ];
-  
   
   useEffect(() => {
     checkHeroApproval();
   }, [heroContract, selectedAddress]);
+
+  useEffect(() => {
+    async function fetchActiveTrades() {
+      if (typeof window.ethereum !== 'undefined') {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
+        const trades = await contract.getActiveTrades();
+        console.log(`Trades: ${trades}`);
+        const formattedTrades = trades.map((trade, index) => ({
+          id: index,
+          tradeId: trade.tradeId.toString(),
+          tokenId: trade.tokenId.toString(),
+          buyer: trade.buyer,
+          seller: trade.seller,
+          price: ethers.utils.formatEther(trade.price),
+          nftDeposited: trade.nftDeposited,
+          executed: trade.executed,
+          canceled: trade.canceled
+        }));
+        setActiveTrades(trades);
+      }
+    }
+  
+    fetchActiveTrades();
+  }, []);
   
 
   return (
@@ -221,9 +219,11 @@ function App() {
                 <div style={{ height: 400, width: '50%' }}>
                   <DataGrid rows={rows} columns={columns} pageSize={10} />
                 </div>
-                <div style={{ height: 400, width: '50%' }}>
-                  <DataGrid rows={tradeRows} columns={tradeColumns} pageSize={10} />
-                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent>
+                <TradeList trades={activeTrades} selectedAddress={selectedAddress} onExecute={executeTrade} />
               </CardContent>
             </Card>
             <div></div>
