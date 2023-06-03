@@ -228,7 +228,7 @@ function App() {
                   <div>
                     {heroIsApproved 
                       ? 
-                      <Alert severity="success">Contract Approved</Alert>
+                      <Alert severity="success">Hero NFT contract approved to deposit heroes</Alert>
                       : 
                       <Alert severity="warning">Please approve the Hero contract to be spent by the Escrow contract</Alert>
                     }
@@ -260,7 +260,7 @@ function App() {
                 )}
                 {jewelIsApproved
                   ?
-                  <Alert severity="success">JEWEL Approved</Alert>
+                  <Alert severity="success">JEWEL approved for buying heroes</Alert>
                   :
                   <Alert severity="warning">Please approve JEWEL to be spent by the Escrow contract</Alert>
                 }
