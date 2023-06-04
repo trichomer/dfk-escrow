@@ -14,12 +14,10 @@ import heroAbi from './abis/HeroCoreDiamond.json';
 import jewelAbi from './abis/JewelToken.json';
 import TradeList from './components/TradeList';
 import jewelIcon from './img/jewel_icon.png';
-import klayIcon from './img/klaytn_icon.png';
 import Typography from '@mui/material/Typography';
 const escrowAddress = '0x6D8D4959E2a2F59C5A8eD306465B8Ef7E2c9Ea36';
 const heroAddress = '0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61';
 const jewelAddress = '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43';
-const rpcUrl = 'https://public-node-api.klaytnapi.com/v1/cypress';
 
 const theme = createTheme({
   palette: {
@@ -55,7 +53,6 @@ function App() {
   const [activeTrades, setActiveTrades] = useState([]);
   const [jewelIsApproved, setJewelIsApproved] = useState(false);
 
-
   
   // User clicks Connect button
   async function connect() {
@@ -89,7 +86,7 @@ function App() {
       //console.log(`${ethers.utils.formatEther(balance)} KLAY\n${ethers.utils.formatEther(jewelBalance)} JEWEL`);
       //console.log(`Heroes: ${heroBalance}`);
     } else {
-      //console.log('No wallet found');
+      console.log('No wallet found');
     }
   };
 
@@ -242,15 +239,14 @@ function App() {
         {selectedAddress && (
           <div>
             <Paper elevation={3}>
-              <p>Connected: {selectedAddress}</p>
-              <p>Balance:</p>
-              <p>{jewelBalance} <img src={jewelIcon} alt="JEWEL Icon" style={{ width: '20px' }} /></p>
+              <p>Connected: <b>{selectedAddress}</b></p>
+              <p>Balance: <b>{jewelBalance}</b> <img src={jewelIcon} alt="JEWEL Icon" style={{ width: '20px' }} /></p>
             </Paper>
             <Card>
               <CardContent>
                 <Typography variant='h5'>List Hero</Typography>
                 <TextField 
-                  label="Token Id" 
+                  label="Hero ID" 
                   value={tokenId} 
                   onChange={e => setTokenId(e.target.value)} 
                   type="number"
@@ -294,7 +290,7 @@ function App() {
                     List Hero
                   </Button>
                 </div>
-                <Typography variant='h5'>Available Heroes</Typography>
+                <Typography variant='h5'>Available Heroes to Sell</Typography>
                 <div style={{ height: 400, width: '100%' }}>
                   <DataGrid rows={rows} columns={columns} pageSize={10} />
                 </div>
@@ -317,7 +313,7 @@ function App() {
                   :
                   <Alert severity="warning">Please approve JEWEL to be spent by the Escrow contract</Alert>
                 }
-                <Typography variant='h5'>Active Trades</Typography>
+                <Typography variant='h5'>Your Active Trades</Typography>
                 <TradeList 
                   trades={activeTrades} 
                   selectedAddress={selectedAddress} 

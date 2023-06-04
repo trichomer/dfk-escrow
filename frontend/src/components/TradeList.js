@@ -28,14 +28,11 @@ function TradeList({ trades, selectedAddress, onExecute, onCancel, jewelIsApprov
     //console.log("Trade Rows: ", tradeRows);
 
     const tradeColumns = [
-    { field: 'tradeId', headerName: 'Trade ID', width: 70 },
-    { field: 'tokenId', headerName: 'Token ID', width: 130 },
-    { field: 'buyer', headerName: 'Buyer', width: 200 },
-    { field: 'seller', headerName: 'Seller', width: 200 },
+    { field: 'tokenId', headerName: 'Hero ID', width: 130 },
     { 
         field: 'price', 
         headerName: 'Price',
-        width: 130,
+        width: 100,
         renderCell: (params) => (
             <>
                 {params.value}
@@ -49,6 +46,7 @@ function TradeList({ trades, selectedAddress, onExecute, onCancel, jewelIsApprov
         width: 120,
         renderCell: (params) => (
         //console.log("Render Cell Params: ", params);
+            selectedAddress.toLowerCase() === params.row.buyer.toLowerCase() && (
             <Button 
                 variant="contained" 
                 color="primary" 
@@ -58,7 +56,7 @@ function TradeList({ trades, selectedAddress, onExecute, onCancel, jewelIsApprov
             >
                 Buy
             </Button>
-            
+            )
     ),
     },
     {
@@ -69,7 +67,7 @@ function TradeList({ trades, selectedAddress, onExecute, onCancel, jewelIsApprov
           selectedAddress.toLowerCase() === params.row.seller.toLowerCase() && (
             <Button 
               variant="contained" 
-              color="secondary" 
+              color="primary" 
               onClick={() => onCancel(params.row.tradeId)}
               endIcon={<Cancel />}
             >
@@ -78,6 +76,7 @@ function TradeList({ trades, selectedAddress, onExecute, onCancel, jewelIsApprov
           )
         ),
       },
+      { field: 'buyer', headerName: 'Buyer', width: 360 },
     ];
     
 
