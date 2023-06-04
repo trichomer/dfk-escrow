@@ -104,15 +104,6 @@ contract HeroEscrow is Context, ERC721Holder, ReentrancyGuard {
         emit TradeCanceled(trade.tradeId, trade.tokenId, trade.seller, trade.buyer, trade.price);
     }
 
-    function getTradeCount() public view returns (uint256) {
-        return trades.length;
-    }
-
-    function _exists(uint256 tokenId) internal view returns (bool) {
-        IERC721 heroContract = IERC721(HERO_NFT);
-        return heroContract.ownerOf(tokenId) != address(0);
-    }
-
     function getActiveTrades() public view returns (Trade[] memory) {
         uint256 tradeCount = 0;
         for (uint i = 0; i < trades.length; i++) {

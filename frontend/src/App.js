@@ -15,6 +15,8 @@ import jewelAbi from './abis/JewelToken.json';
 import TradeList from './components/TradeList';
 import jewelIcon from './img/jewel_icon.png';
 import Typography from '@mui/material/Typography';
+import Launch from '@mui/icons-material/Launch';
+import Link from '@mui/material/Link';
 const escrowAddress = '0x6D8D4959E2a2F59C5A8eD306465B8Ef7E2c9Ea36';
 const heroAddress = '0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61';
 const jewelAddress = '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43';
@@ -244,6 +246,16 @@ function App() {
             </Paper>
             <Card>
               <CardContent>
+                <Typography>Escrow contract address:</Typography>
+                <Typography>
+                  <Link 
+                    href="https://scope.klaytn.com/account/0x1D110414b4f3b909c2D68564fa19DFb9aEd00FAf?tabId=internalTx"
+                    target="_blank" 
+                    rel="noopener noreferrer"  
+                  >
+                    0x1D110414b4f3b909c2D68564fa19DFb9aEd00FAf<Launch />
+                  </Link>
+                </Typography>
                 <Typography variant='h5'>List Hero</Typography>
                 <TextField 
                   label="Hero ID" 
