@@ -34,13 +34,7 @@ function TradeList({ trades, selectedAddress, onExecute, onCancel, jewelIsApprov
     { field: 'seller', headerName: 'Seller', width: 200 },
     { 
         field: 'price', 
-        headerName: (
-            <>
-                Price 
-                <img src={jewelIcon} alt="JEWEL" style={{width: '15px', height: '15px'}} />
-                
-            </>
-        ),
+        headerName: 'Price',
         width: 130,
         renderCell: (params) => (
             <>

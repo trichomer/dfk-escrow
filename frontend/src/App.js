@@ -43,7 +43,7 @@ const theme = createTheme({
 
 function App() {
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [balance, setBalance] = useState(null);
+  // const [balance, setBalance] = useState(null);
   const [jewelBalance, setJewelBalance] = useState(null);
   const [tokenId, setTokenId] = useState('');
   const [buyerAddress, setBuyerAddress] = useState('');
@@ -77,8 +77,8 @@ function App() {
 
 
 
-      const balance = await provider.getBalance(account);
-      setBalance(ethers.utils.formatEther(balance));
+      // const balance = await provider.getBalance(account);
+      // setBalance(ethers.utils.formatEther(balance));
 
       const jewelBalance = await jewelContractInstance.balanceOf(account);
       setJewelBalance(ethers.utils.formatEther(jewelBalance));
@@ -242,8 +242,8 @@ function App() {
         {selectedAddress && (
           <div>
             <Paper elevation={3}>
-              <p>Connected with: {selectedAddress}</p>
-              <p>{balance} <img src={klayIcon} alt="KLAY Icon" style={{ width: '20px' }} /></p>
+              <p>Connected: {selectedAddress}</p>
+              <p>Balance:</p>
               <p>{jewelBalance} <img src={jewelIcon} alt="JEWEL Icon" style={{ width: '20px' }} /></p>
             </Paper>
             <Card>
