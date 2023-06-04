@@ -15,6 +15,7 @@ import jewelAbi from './abis/JewelToken.json';
 import TradeList from './components/TradeList';
 import jewelIcon from './img/jewel_icon.png';
 import klayIcon from './img/klaytn_icon.png';
+import Typography from '@mui/material/Typography';
 const escrowAddress = '0x6D8D4959E2a2F59C5A8eD306465B8Ef7E2c9Ea36';
 const heroAddress = '0x268CC8248FFB72Cd5F3e73A9a20Fa2FF40EfbA61';
 const jewelAddress = '0x30C103f8f5A3A732DFe2dCE1Cc9446f545527b43';
@@ -85,10 +86,10 @@ function App() {
       const heroBalance = await heroContractInstance.getUserHeroes(account);
       setHeroIds(heroBalance.map(id => id.toString()));
       
-      console.log(`${ethers.utils.formatEther(balance)} KLAY\n${ethers.utils.formatEther(jewelBalance)} JEWEL`);
-      console.log(`Heroes: ${heroBalance}`);
+      //console.log(`${ethers.utils.formatEther(balance)} KLAY\n${ethers.utils.formatEther(jewelBalance)} JEWEL`);
+      //console.log(`Heroes: ${heroBalance}`);
     } else {
-      console.log('No wallet found');
+      //console.log('No wallet found');
     }
   };
 
@@ -109,7 +110,7 @@ function App() {
       checkHeroApproval();
     } catch (error) {
       if (error.code === 4001) {
-        console.log("Transaction rejected by user");
+        //console.log("Transaction rejected by user");
     } else {
         throw error;
     }
@@ -133,7 +134,7 @@ function App() {
       checkJewelApproval();
     } catch (error) {
       if (error.code === 4001) {
-        console.log("Transaction rejected by user");
+        //console.log("Transaction rejected by user");
     } else {
         throw error;
     }
@@ -159,7 +160,7 @@ function App() {
       await contractWithSigner.createTrade(tokenId, buyerAddress, ethers.utils.parseEther(price));
     } catch (error) {
       if (error.code === 4001) {
-        console.log("Transaction rejected by user");
+        //console.log("Transaction rejected by user");
     } else {
         throw error;
     }
@@ -175,7 +176,7 @@ function App() {
       await contractWithSigner.executeTrade(tradeId);
     } catch (error) {
       if (error.code === 4001) {
-        console.log("Transaction rejected by user");
+        //console.log("Transaction rejected by user");
     } else {
         throw error;
     }
@@ -191,7 +192,7 @@ function App() {
       await contractWithSigner.cancelTrade(tradeId);
     } catch (error) {
       if (error.code === 4001) {
-        console.log("Transaction rejected by user");
+        //console.log("Transaction rejected by user");
     } else {
         throw error;
     }
@@ -209,7 +210,7 @@ function App() {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
         const trades = await contract.getActiveTrades();
-        console.log(`Trades: ${trades}`);
+        //console.log(`Trades: ${trades}`);
         const formattedTrades = trades.map((trade, index) => ({
           id: index,
           tradeId: trade.tradeId.toString(),
@@ -247,6 +248,7 @@ function App() {
             </Paper>
             <Card>
               <CardContent>
+                <Typography variant='h5'>List Hero</Typography>
                 <TextField 
                   label="Token Id" 
                   value={tokenId} 
@@ -292,6 +294,7 @@ function App() {
                     List Hero
                   </Button>
                 </div>
+                <Typography variant='h5'>Available Heroes</Typography>
                 <div style={{ height: 400, width: '100%' }}>
                   <DataGrid rows={rows} columns={columns} pageSize={10} />
                 </div>
@@ -314,7 +317,7 @@ function App() {
                   :
                   <Alert severity="warning">Please approve JEWEL to be spent by the Escrow contract</Alert>
                 }
-
+                <Typography variant='h5'>Active Trades</Typography>
                 <TradeList 
                   trades={activeTrades} 
                   selectedAddress={selectedAddress} 
