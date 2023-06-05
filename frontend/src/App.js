@@ -39,11 +39,9 @@ const theme = createTheme({
     },
   },
 });
-//console.log(theme);
 
 function App() {
   const [selectedAddress, setSelectedAddress] = useState(null);
-  // const [balance, setBalance] = useState(null);
   const [jewelBalance, setJewelBalance] = useState(null);
   const [tokenId, setTokenId] = useState('');
   const [buyerAddress, setBuyerAddress] = useState('');
@@ -173,12 +171,12 @@ function App() {
   };
   
   // Format heroIds for the DataGrid component
-  const rows = heroIds.map((id, index) => ({
+  const heroRows = heroIds.map((id, index) => ({
     id: index,
     heroId: id,
   }));
 
-  const columns = [
+  const heroColumns = [
     { field: 'heroId', headerName: 'Hero ID', width: 130 },
   ];
 
@@ -230,35 +228,39 @@ function App() {
     }
   };
   
-  
+  // Check user's HERO contract approval status
   useEffect(() => {
     checkHeroApproval();
   }, [heroContract, selectedAddress]);
 
-
+  // Check user's JEWEL approval status
   useEffect(() => {
-    async function fetchActiveTrades() {
+    checkJewelApproval();
+  }, [jewelContract, selectedAddress]);
+
+  // Fetch user's active trades and available heroes
+  useEffect(() => {
+    async function fetchActiveTradesAndHeroes() {
       if (window.ethereum && window.ethereum.chainId === '0x2019') {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
+        // Fetch user's active trades
         const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
         const trades = await contract.getActiveTrades();
         setActiveTrades(trades);
+        // Fetch user's available heroes
+        const heroContractInstance = new ethers.Contract(heroAddress, heroAbi, provider);
+        const heroBalance = await heroContractInstance.getUserHeroes(selectedAddress);
+        setHeroIds(heroBalance.map(id => id.toString()));
       } else {
         console.log('Unable to call getActiveTrades(); wallet not connected to Klaytn')
       }
     }
   
     if(selectedAddress) {
-      fetchActiveTrades();
+      fetchActiveTradesAndHeroes();
     }
-  }, [selectedAddress]);
+  }, [selectedAddress, createTrade, executeTrade, cancelTrade]);
 
-
-  useEffect(() => {
-    checkJewelApproval();
-  }, [jewelContract, selectedAddress]);
-  
-  
 
   return (
     <ThemeProvider theme={theme}>
@@ -266,10 +268,13 @@ function App() {
         <Button variant="contained" onClick={connect}>Connect Wallet</Button>
         {selectedAddress && (
           <div>
-            <Paper elevation={3}>
+            <Card>
+              <CardContent>
               <p>Connected: <b>{selectedAddress}</b></p>
               <p>Balance: <b>{jewelBalance}</b> <img src={jewelIcon} alt="JEWEL Icon" style={{ width: '20px' }} /></p>
-            </Paper>
+              </CardContent>
+            </Card>
+            <br />
             <Card>
               <CardContent>
                 <Typography>Escrow contract address:</Typography>
@@ -282,7 +287,9 @@ function App() {
                     0x1D110414b4f3b909c2D68564fa19DFb9aEd00FAf<Launch />
                   </Link>
                 </Typography>
+                <br />
                 <Typography variant='h5'>List Hero</Typography>
+                <br />
                 <TextField 
                   label="Hero ID" 
                   value={tokenId} 
@@ -328,12 +335,14 @@ function App() {
                     List Hero
                   </Button>
                 </div>
+                <br />
                 <Typography variant='h5'>Available Heroes to Sell</Typography>
                 <div style={{ height: 400, width: '100%' }}>
-                  <DataGrid rows={rows} columns={columns} pageSize={10} />
+                  <DataGrid rows={heroRows} columns={heroColumns} pageSize={10} />
                 </div>
               </CardContent>
             </Card>
+            <br />
             <Card>
               <CardContent>
               {!jewelIsApproved && (
