@@ -38,6 +38,18 @@ const theme = createTheme({
       primary: '#b0bec5',  // Light gray text
     },
   },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: '5px',
+          border: '1px solid #000000',
+          boxShadow: 'inset 0 0 10px #b0bec5',
+          
+        }
+      }
+    },
+  },
 });
 
 function App() {
