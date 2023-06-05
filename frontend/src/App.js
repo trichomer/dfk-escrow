@@ -59,6 +59,40 @@ function App() {
   // User clicks Connect button
   async function connect() {
     if (typeof window.ethereum !== 'undefined') {
+      // Get the current network
+      let networkId = await window.ethereum.request({ method: 'net_version' });
+      const klaytnNetworkID = '8217';
+      // If the current network is not Klaytn, request to switch to Klaytn
+      if (networkId !== klaytnNetworkID) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2019',
+              chainName: 'Klaytn',
+              nativeCurrency: {
+                name: 'KLAY',
+                symbol: 'KLAY',
+                decimals: 18,
+              },
+              rpcUrls: ['https://klaytn.blockpi.network/v1/rpc/public'],
+              blockExplorerUrls: ['https://scope.klaytn.com/'],
+            }],
+          });
+          // Wait for the chainChanged event
+          await new Promise(resolve => {
+            window.ethereum.once('chainChanged', () => {
+              resolve();
+            });
+          });
+        } catch (error) {
+          console.error(error);
+          return;
+        }
+        // Get the new network id after switch
+        networkId = await window.ethereum.request({ method: 'net_version' });
+      }
+
       // Request account access from user
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const account = accounts[0];
@@ -73,8 +107,6 @@ function App() {
       const heroContractInstance = new ethers.Contract(heroAddress, heroAbi, provider);
       setHeroContract(heroContractInstance);  // Set the state variable
       checkHeroApproval();
-
-
 
       // const balance = await provider.getBalance(account);
       // setBalance(ethers.utils.formatEther(balance));
@@ -109,7 +141,7 @@ function App() {
       checkHeroApproval();
     } catch (error) {
       if (error.code === 4001) {
-        //console.log("Transaction rejected by user");
+        console.log("Transaction rejected by user");
     } else {
         throw error;
     }
@@ -133,7 +165,7 @@ function App() {
       checkJewelApproval();
     } catch (error) {
       if (error.code === 4001) {
-        //console.log("Transaction rejected by user");
+        console.log("Transaction rejected by user");
     } else {
         throw error;
     }
@@ -203,30 +235,24 @@ function App() {
     checkHeroApproval();
   }, [heroContract, selectedAddress]);
 
+
   useEffect(() => {
     async function fetchActiveTrades() {
-      if (typeof window.ethereum !== 'undefined') {
+      if (window.ethereum && window.ethereum.chainId === '0x2019') {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const contract = new ethers.Contract(escrowAddress, escrowAbi.abi, provider);
         const trades = await contract.getActiveTrades();
-        //console.log(`Trades: ${trades}`);
-        const formattedTrades = trades.map((trade, index) => ({
-          id: index,
-          tradeId: trade.tradeId.toString(),
-          tokenId: trade.tokenId.toString(),
-          buyer: trade.buyer,
-          seller: trade.seller,
-          price: ethers.utils.formatEther(trade.price),
-          nftDeposited: trade.nftDeposited,
-          executed: trade.executed,
-          canceled: trade.canceled
-        }));
         setActiveTrades(trades);
+      } else {
+        console.log('Unable to call getActiveTrades(); wallet not connected to Klaytn')
       }
     }
   
-    fetchActiveTrades();
-  }, []);
+    if(selectedAddress) {
+      fetchActiveTrades();
+    }
+  }, [selectedAddress]);
+
 
   useEffect(() => {
     checkJewelApproval();
@@ -279,7 +305,7 @@ function App() {
                   {!heroIsApproved && (
                     <Button 
                       variant="contained" 
-                      onClick={approveHero}
+                      onClick={() => approveHero().catch(console.error)}
                       disabled={heroIsApproved}
                     >
                       Approve Contract
@@ -295,7 +321,7 @@ function App() {
                   </div>
                   <Button 
                     variant="contained"
-                    onClick={createTrade} 
+                    onClick={() => createTrade().catch(console.error)} 
                     endIcon={<SendIcon />}
                     disabled={!heroIsApproved}
                   >
@@ -313,7 +339,7 @@ function App() {
               {!jewelIsApproved && (
                     <Button 
                       variant="contained" 
-                      onClick={approveJewel}
+                      onClick={() => approveJewel().catch(console.error)}
                       disabled={jewelIsApproved}
                     >
                       Approve Jewel
